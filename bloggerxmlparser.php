@@ -1,44 +1,42 @@
 <?php
-/*
-The MIT License (MIT)
-Copyright (c) [2015] [sukualam]
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
+
+use yii\helpers\ArrayHelper;
+
+require __DIR__ . '/../btemplates/php_packages/autoload.php';
 
 
 // Path to Blogger Backup Blog Filename (.xml)
-$filename = 'blog.xml';
+$filename = __DIR__ . '/blog.xml';
 
 // parse the heck out to mixed array and object...
 $parse = simplexml_load_file($filename);
+if (!$parse) die("broken ${filename}");
+
+/*
 // because $parse still messy, we convert it to json
 $encode = json_encode($parse);
 // after convert to json, we decode that json to associative array
 $dec = json_decode($encode,true);
+*/
 
 // $term is the filter for 'post' data
-$term = 'http://schemas.google.com/blogger/2008/kind#post';
+$termPost = 'http://schemas.google.com/blogger/2008/kind#post';
 
-// BELOW JUST EXAMPLE
+$contents = $parse;
+$contents = json_decode(json_encode($parse), true);
 
-/*
- * Example Info: This will show all posts in backup file
- * you can hack this more...
- */
+$entries = $contents['entry'];
+$posts = array_filter($entries, function($post) use ($termPost) {
+
+	foreach (ArrayHelper::getValue($post, 'category', []) as $category) {
+		if (ArrayHelper::getValue($category, 'term') === $termPost || ArrayHelper::getValue($category, '@attributes.term') === $termPost) {
+			return true;
+		}
+	}
+	return false;
+});
+
+dd($posts);
  
 foreach($dec['entry'] as $id => $content){
 	if($content['category'][0]['@attributes']['term'] == $term){
@@ -55,5 +53,3 @@ foreach($dec['entry'] as $id => $content){
 		unset($tags);
 	}
 }
-
-?>
